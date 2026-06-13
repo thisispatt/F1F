@@ -7,13 +7,39 @@
 <style>
   html, body { margin: 0; background: #0A0A0B; }
   #root { min-height: 100vh; }
+  #err { display:none; color:#FF6B6B; background:#141417; font:12px/1.6 ui-monospace,monospace;
+         padding:16px; margin:16px; border:1px solid #333; border-radius:8px; white-space:pre-wrap; }
 </style>
+<!-- Show any load/runtime error on screen instead of a blank page -->
+<script>
+  function showErr(msg) {
+    var d = document.getElementById('err');
+    if (!d) { d = document.createElement('pre'); d.id = 'err'; document.body.appendChild(d); }
+    d.style.display = 'block';
+    d.textContent += msg + '\n';
+  }
+  window.addEventListener('error', function (e) {
+    showErr((e.message || e.error || e) + (e.filename ? ('\n  at ' + e.filename + ':' + e.lineno) : ''));
+  });
+</script>
 <!-- React + Recharts + Babel from CDN (no build step needed) -->
-<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-<script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<!-- Name any library that got blocked (most common cause of a blank page) -->
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    var miss = [];
+    if (!window.React) miss.push('React');
+    if (!window.ReactDOM) miss.push('ReactDOM');
+    if (!window.Recharts) miss.push('Recharts');
+    if (!window.Babel) miss.push('Babel');
+    if (miss.length) showErr('These libraries failed to load: ' + miss.join(', ') +
+      '\nUsually a network, firewall, or ad-blocker is blocking the CDN.');
+  });
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -403,7 +429,12 @@ const S = {
   resetBtn: { fontFamily: "var(--pixel)", fontSize: 13, fontWeight: 500, color: C.muted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", cursor: "pointer", letterSpacing: "0.04em" },
 };
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+try {
+  if (typeof Recharts === "undefined") throw new Error("Recharts failed to load from the CDN (check network / ad blocker).");
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+} catch (e) {
+  showErr(String(e && e.stack ? e.stack : e));
+}
 </script>
 </body>
 </html>
